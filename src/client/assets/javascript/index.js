@@ -85,19 +85,17 @@ async function handleCreateRace() {
 	}
 	// const race = TODO - invoke the API call to create the race, then save the result
 	const race = await createRace(player_id, track_id);
-	// TODO - update the store with the race id
-	store.race_id = parseInt(race.ID) - 1;
 	store.track_id = track_id;
-	console.log("store.race_id = " + race_id-1);
+	console.log("store.race_id = " + store.race_id-1);
 	// For the API to work properly, the race id should be race id - 1
 	
 	// The race has been created, now start the countdown
 	// TODO - call the async function runCountdown
-	runCountdown();
+	await runCountdown();
 	// TODO - call the async function startRace
 	await startRace(store.race_id);
 	// TODO - call the async function runRace
-	runRace(store.race_id);
+	await runRace(store.race_id);
 }
 catch(error)
 {
@@ -105,14 +103,32 @@ catch(error)
 }
 }
 
-function runRace(raceID) {
-	return new Promise(resolve => {
+async function runRace(raceID) {
+	try
+	{
+		return new Promise(resolve => {
 	// TODO - use Javascript's built in setInterval method to get race info every 500ms
-
+	const raceInterval = setInterval(async() => {
+		const res = await getRace(raceID)
+		if(res.status === "in-progress")
+		{
+			renderAt('#leaderBoard', raceProgress(res.positions))
+		}
+		if (res.status === "finished") {
+			clearInterval(raceInterval) // to stop the interval from repeating
+			renderAt('#race', resultsView(res.positions)) // to render the results view
+			resolve(res) // resolve the promise
+		}
+	},500)
+	})}
+	catch(error)
+	{
+		console.log("Error at run Race at: "+ error.message)
+	}
 	/* 
 		TODO - if the race info status property is "in-progress", update the leaderboard by calling:
 
-		renderAt('#leaderBoard', raceProgress(res.positions))
+		
 	*/
 
 	/* 
@@ -122,7 +138,6 @@ function runRace(raceID) {
 		renderAt('#race', resultsView(res.positions)) // to render the results view
 		reslove(res) // resolve the promise
 	*/
-	})
 	// remember to add error handling for the Promise
 }
 
@@ -389,28 +404,35 @@ async function createRace(player_id, track_id) {
 	track_id = parseInt(track_id)
 	const body = { player_id, track_id }
 	
-	return fetch(`${SERVER}/api/races`, {
-		method: 'POST',
+	fetch(`${SERVER}/api/races`, {
+		method: "POST",
 		...defaultFetchOpts(),
-		dataType: 'jsonp',
-		body: JSON.stringify(body)
+		dataType: "jsonp",
+		body: JSON.stringify(body),
 	})
-	.then(res => res.json())
-	.then((res) => {
-		return store.race_id = res.ID;
-		console.log("Store ID: "+ store.race_id);
-	})
-	.catch(err => console.log("Problem with createRace request::", err))
+		.then((res) => {return res.json()})
+		.then((res) => {
+			store.race_id = parseInt(res.ID) - 1; //here to store the race_id that we get from the API
+			console.log("Race ID is: " + store.race_id)
+			 //here to store the race_id that we get from the API
+		})
+		.catch((err) => console.log("Problem with createRace request::", err));
 }
 
 async function getRace(id) {
+	try
+{
 	return fetch(`${SERVER}/api/races/${id}`)
         .then((response) => response.json())
         .then((data) => {
-            console.log(data);
+            console.log("Race ID is: " +data);
             return data;
         })
-        .catch((error) => console.log(error));
+}
+    catch(error)
+	{
+		console.log("error at getRace: " + error.message)
+	}
 }
 
 async function startRace(id) {
