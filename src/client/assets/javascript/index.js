@@ -153,8 +153,6 @@ async function runCountdown() {
 			const countDownInterval = setInterval(countDown, 1000);
 
 			// Done TODO - if the countdown is done, clear the interval, resolve the promise, and return
-
-
 		})
 	} catch(error) {
 		console.log(error);
@@ -193,12 +191,12 @@ function handleSelectTrack(target) {
 	
 }
 
-function handleAccelerate() {
+function handleAccelerate(target) {
 	try
 	{
 	console.log("accelerate button clicked")
 	// TODO - Invoke the API call to accelerate
-	accelerate(store.player_id)
+	accelerate(store.player_id-1)
 	}
 	catch(error)
 	{
@@ -208,13 +206,7 @@ function handleAccelerate() {
 
 // HTML VIEWS ------------------------------------------------
 // Provided code - do not remove
-const customDriver = {
-	"Racer 1": "Lewis Hamillton",
-	"Racer 2": "Mick Schumacher",
-	"Racer 3": "Pierre Gasly",
-	"Racer 4": "Lando Norris",
-	"Racer 5": "Alex Albon",
-  }
+
 function renderRacerCars(racers) {
 	if (!racers.length) {
 		return `
@@ -232,7 +224,7 @@ function renderRacerCars(racers) {
 }
 
 function renderRacerCard(racer) {
-	const { id, driver_name, top_speed, acceleration, handling } = racer
+	const {id, driver_name, top_speed, acceleration, handling } = racer
 
 	return `
 		<li class="card podracer" id="${id}">
@@ -289,7 +281,7 @@ function renderRaceStartView(track, racer) {
 	const {trackID} = track;
 	return `
 		<header>
-			<h1>Race: ${customTracks[trackID]}</h1>
+			<h1>Race: ${trackID}</h1>
 		</header>
 		<main id="two-columns">
 			<section id="leaderBoard">
@@ -331,7 +323,7 @@ function raceProgress(positions) {
 		return `
 			<tr>
 				<td>
-					<h3>${count++} - ${p.driver_name}</h3>
+					<h3>${count++} - ${customDriver[p.driver_name]}</h3>
 				</td>
 			</tr>
 		`
@@ -388,21 +380,32 @@ async function getTracks() {
 async function getRacers() {
 	defaultFetchOpts()
 	// GET request to `${SERVER}/api/cars`
+	
 	try
 {
 	return fetch(`${SERVER}/api/cars`)
 	.then(racers => racers.json())
-	}
+	.then(racers => console.log(racers[1].driver_name))
+	.then(racers => racers.json())
+}
 	catch(error)  
 	{
 	console.log("error at get Racers : "+ error.message)
 	}
 }
 
-async function createRace(player_id, track_id) {
+
+const customDriver = {
+	"Racer 1" : "Lewis Hamillton",
+	"Racer 2" : "Mick Schumacher",
+	"Racer 3" : "Pierre Gasly",
+	"Racer 4" : "Lando Norris",
+	"Racer 5" : "Alex Albon",
+  }
+async function createRace(player_id, track_id, customDriver) {
 	player_id = parseInt(player_id)
 	track_id = parseInt(track_id)
-	const body = { player_id, track_id }
+	const body = { player_id, track_id, customDriver }
 	
 	fetch(`${SERVER}/api/races`, {
 		method: "POST",
@@ -412,18 +415,22 @@ async function createRace(player_id, track_id) {
 	})
 		.then((res) =>  res.json())
 		.then((res) => {
-			store.race_id = res.ID - 1; //here to store the race_id that we get from the API
-			console.log("Race ID is kamil: " + store.race_id)
-			return res.ID
-			 //here to store the race_id that we get from the API
+			store.race_id = res.ID-1; //here to store the race_id that we get from the API
+			console.log("Race ID is: " + store.race_id)
 		})
 		.catch((err) => console.log("Problem with createRace request::", err));
 }
 
 async function getRace(id) {
-	const resp = await fetch(`${SERVER}/api/races/${id}`)
-	return resp.json();
-}
+	// GET request to `${SERVER}/api/races/${id}`
+    return fetch(`${SERVER}/api/races/${id}`)
+        .then((response) => response.json())
+        .then((data) => {
+            console.log(data);
+            return data;
+        })
+        .catch((error) => console.log(error));
+	}
 
 async function startRace(id) {
 	return fetch(`${SERVER}/api/races/${id}/start`, {
