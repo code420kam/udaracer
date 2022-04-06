@@ -82,6 +82,7 @@ async function handleCreateRace() {
 	if(!track_id||!player_id)
 	{
 		alert("Track or Racer not selected..")
+		alert("Attention: Race starts without you")
 	}
 	// const race = TODO - invoke the API call to create the race, then save the result
 	const race = await createRace(player_id, track_id);
@@ -277,11 +278,13 @@ function renderCountdown(count) {
 	`
 }
 
-function renderRaceStartView(track, racer) {
-	const {trackID} = track;
+function renderRaceStartView(tracks) {
+	const { id, name, } = tracks
+
+	
 	return `
 		<header>
-			<h1>Race: ${trackID}</h1>
+			<h1>Race: ${tracks}</h1>
 		</header>
 		<main id="two-columns">
 			<section id="leaderBoard">
@@ -307,37 +310,79 @@ function resultsView(positions) {
 		</header>
 		<main>
 			${raceProgress(positions)}
-			<a href="/race">Start a new race</a>
+			<a href="/race"><button>Start a new race</button</a>
 		</main>
 	`
 }
 
 function raceProgress(positions) {
-	let userPlayer = positions.find(e => e.id === store.player_id)
-	userPlayer.driver_name += " (you)"
+	const raceTracks = positions.map((r) => {
+	  // There are 201 segments in the race and kept track length as 25vh
+	  const completion = r.segment/201;
+	  if (r.id === store.player_id){
+	  return`
+	  <div class="racetrack">
+	  <div class="race-car" style = " bottom:${completion * 25}vh"></div>
+	  <div class="racer-name">
+		<div id="youcolor">
+		${customDriver[r.driver_name]}
+		</div>
+		<div>${Math.round(completion * 100)}%</div>
+	  </div>
+	  </div>
+	  `
+	  }
+	return`
+	<div class="racetrack">
+	  <div class="race-car" style="bottom:${completion * 25}vh"></div>
+	  <div class="racer-name">
+		<div>
+		${customDriver[r.driver_name]}
+		</div>
+		<div>${Math.round(completion * 100)}%</div>
+	  </div>
+	</div>
+	`
+	}).join('');
 
+	const racers = positions.map(p => p.driver_name);
+	let userPlayer = positions.find(e => e.id === parseInt(store.player_id))
 	positions = positions.sort((a, b) => (a.segment > b.segment) ? -1 : 1)
 	let count = 1
-
+  
 	const results = positions.map(p => {
-		return `
-			<tr>
-				<td>
-					<h3>${count++} - ${customDriver[p.driver_name]}</h3>
-				</td>
-			</tr>
-		`
-	})
-
+	  if (p.id === store.player_id){
+	  return `
+		  <td>
+			<h3><font color="blue">${count++} - ${customDriver[p.driver_name]}(you)</font></h3>
+		  </td>
+		  `
+	  }
+	  return `
+		<tr>
+				  <td>
+					  <h3><font color="red">${count++} - ${customDriver[p.driver_name]}</font></h3>
+				  </td>
+			  </tr>
+		  `
+	}).join("")
+  
+  
 	return `
-		<main>
-			<h3>Leaderboard</h3>
-			<section id="leaderBoard">
+		  <main>
+			  <h3><strong>Leaderboard<strong></h3>
+			  <section id="leaderBoard" class="leaderBoard">
+		<div class="progress-section">
 				${results}
+			  </div>
+			  <div class="progress-racetracks">
+				${raceTracks}
+			  </div>
 			</section>
-		</main>
-	`
-}
+		  </main>
+	  `
+  
+  }
 
 function renderAt(element, html) {
 	const node = document.querySelector(element)
@@ -347,7 +392,13 @@ function renderAt(element, html) {
 
 // ^ Provided code ^ do not remove
 
-
+const customDriver = {
+	"Racer 1" : "Lewis Hamillton",
+	"Racer 2" : "Mick Schumacher",
+	"Racer 3" : "Pierre Gasly",
+	"Racer 4" : "Lando Norris",
+	"Racer 5" : "Alex Albon",
+  }
 // API CALLS ------------------------------------------------
 
 const SERVER = 'http://localhost:8000'
@@ -385,8 +436,6 @@ async function getRacers() {
 {
 	return fetch(`${SERVER}/api/cars`)
 	.then(racers => racers.json())
-	.then(racers => console.log(racers[1].driver_name))
-	.then(racers => racers.json())
 }
 	catch(error)  
 	{
@@ -394,14 +443,6 @@ async function getRacers() {
 	}
 }
 
-
-const customDriver = {
-	"Racer 1" : "Lewis Hamillton",
-	"Racer 2" : "Mick Schumacher",
-	"Racer 3" : "Pierre Gasly",
-	"Racer 4" : "Lando Norris",
-	"Racer 5" : "Alex Albon",
-  }
 async function createRace(player_id, track_id, customDriver) {
 	player_id = parseInt(player_id)
 	track_id = parseInt(track_id)

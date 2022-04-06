@@ -1,8 +1,11 @@
 /* PROGRESS PAGE SPECIFIC STYLES */
 
 /* -------------------  MOBILE  --------------------- */
-header {
-  background-image: url('https://via.placeholder.com/1150');
+
+body {
+  background-image: url('\../images/create_race.jpg');
+  color: dodgerblue;
+  font-size: large;
 }
 
 main#two-columns {
@@ -29,9 +32,10 @@ section#accelerate button {
     font-size: 70px;
 }
 
+
+
 /* -------------------  TABLET  --------------------- */
 @media (min-width: 768px) {
-
 }
 
 /* -------------------  DESKTOP  -------------------- */
